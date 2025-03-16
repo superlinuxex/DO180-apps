@@ -1,16 +1,9 @@
-
 const { Sequelize } = require('sequelize');
 
-module.exports.params = {
-  dbname: process.env.MYSQL_ENV_MYSQL_DATABASE,
-  username: process.env.MYSQL_ENV_MYSQL_USER,
-  password: process.env.MYSQL_ENV_MYSQL_PASSWORD,
-  params: {
-    host: process.env.MYSQL_HOST || 'mysql',
-    port: process.env.MYSQL_PORT || '3306',
+const sequelize = new Sequelize(process.env.DB_NAME || 'todoapp', process.env.DB_USER || 'root', process.env.DB_PASSWORD || 'password', {
+    host: process.env.DB_HOST || 'localhost',
     dialect: 'mysql',
-    dialectModule: require('mysql2'),
-    logging: false
-  }
-};
+    port: process.env.DB_PORT || 3306
+});
 
+module.exports = sequelize;
