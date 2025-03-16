@@ -1,18 +1,21 @@
 const express = require('express');
+const bodyParser = require('body-parser');
 const app = express();
 const db = require('./models/db');
-const itemRoutes = require('./controllers/items');
+const itemsController = require('./controllers/items');
+const serverInfoController = require('./controllers/serverinfo');
 
-app.use(express.json());
-app.use('/items', itemRoutes);
+app.use(bodyParser.json());
+app.use(bodyParser.urlencoded({ extended: true }));
 
-const PORT = process.env.PORT || 8080;
+itemsController(app);
+serverInfoController(app);
 
-db.sync().then(() => {
-    console.log("Database synced");
-    app.listen(PORT, () => {
-        console.log(`Server is running on port ${PORT}`);
-    });
+const port = process.env.PORT || 8080;
+db.sequelize.sync().then(() => {
+  app.listen(port, () => {
+    console.log(`TodoApp listening on port ${port}`);
+  });
 }).catch(err => {
-    console.error("Database sync failed:", err);
+  console.error('Database sync failed:', err);
 });

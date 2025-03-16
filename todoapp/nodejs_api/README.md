@@ -1,2 +1,2 @@
-# DO276 JavaScript/Node.js To Do List App
-Aplicación de ejemplo para gestionar tareas con Node.js y MySQL.
+# TodoApp OpenShift
+Aplicación TodoApp con Node.js y MySQL lista para desplegar en OpenShift.
