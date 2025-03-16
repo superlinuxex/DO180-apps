@@ -1,29 +1,33 @@
-var os = require('os');
+const os = require('os');
+const pkg = require('../package.json');
 
-exports.context = function(server, path) {
-    if (!server)
-        done('has to provide a restify server object');
-        
-    server.get(path + '/host', this.serverInfo);
-};
-
-exports.serverInfo = function(req, res, next) {
-    var address;
-    var ifaces = os.networkInterfaces();
-
-    for (var dev in ifaces) {
-        var iface = ifaces[dev].filter(function(details) {
-            return details.family === 'IPv4' && details.internal === false;
-        });
-        if (iface.length > 0)
-            address = iface[0].address;
+exports.context = function (server, path) {
+    if (!server) {
+        throw new Error('You must provide a restify server instance');
     }
 
-    var reply = {
-        ip: address,
-        hostname: os.hostname()
+    let context = "/serverinfo";
+    if (path) {
+        context = path + context;
+    }
+
+    server.get(context, this.info);
+};
+
+exports.info = function (req, res, next) {
+    const info = {
+        appName: pkg.name,
+        version: pkg.version,
+        description: pkg.description || 'ToDo API service',
+        hostname: os.hostname(),
+        platform: os.platform(),
+        uptime: `${os.uptime()} seconds`,
+        memory: {
+            total: `${(os.totalmem() / (1024 ** 2)).toFixed(2)} MB`,
+            free: `${(os.freemem() / (1024 ** 2)).toFixed(2)} MB`
+        }
     };
-    res.json(reply);
-    next();
+    res.json(info);
+    return next();
 };
 
