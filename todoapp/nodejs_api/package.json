@@ -9,9 +9,9 @@
     "restify-cors-middleware": "^1.1.1"
   },
   "scripts": {
-    "start": "node app.js",
-    "install": "npm install"
+    "start": "node app.js"
   }
 }
+
 
 
