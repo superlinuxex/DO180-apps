@@ -1,35 +1,37 @@
-var restify = require('restify');
+const restify = require('restify');
+const corsMiddleware = require('restify-cors-middleware');
+const controller = require('./controllers/items');
+const serverinfo = require('./controllers/serverinfo');
+const db = require('./models/db');
+const model = require('./models/items');
 
-var controller = require('./controllers/items');
-var serverinfo = require('./controllers/serverinfo');
-
-var db = require('./models/db');
-var model = require('./models/items');
-
-model.connect(db.params, function(err) {
-    if (err) throw err;
+const cors = corsMiddleware({
+  origins: ['*'],
+  allowHeaders: ['Authorization'],
+  exposeHeaders: ['Authorization']
 });
 
-var server = restify.createServer() 
-    .use(restify.fullResponse())
-    .use(restify.queryParser())
-    .use(restify.bodyParser())
-    .use(restify.CORS());
-    
-controller.context(server, '/todo/api', model); 
-serverinfo.context(server, '/todo/api'); 
-
-var port = process.env.PORT || 30080;
-server.listen(port, function (err) {
-    if (err)
-        console.error(err);
-    else
-        console.log('App is ready at : ' + port);
+model.connect(db.params, (err) => {
+  if (err) throw err;
 });
- 
-if (process.env.environment == 'production')
-    process.on('uncaughtException', function (err) {
-        console.error(JSON.parse(JSON.stringify(err, ['stack', 'message', 'inner'], 2)))
-    });
-    
+
+const server = restify.createServer();
+server.pre(cors.preflight);
+server.use(cors.actual);
+server.use(restify.plugins.queryParser());
+server.use(restify.plugins.bodyParser());
+
+controller.context(server, '/todo/api', model);
+serverinfo.context(server, '/todo/api');
+
+const port = process.env.PORT || 30080;
+server.listen(port, () => {
+  console.log(`App is ready at: ${port}`);
+});
+
+if (process.env.environment === 'production') {
+  process.on('uncaughtException', (err) => {
+    console.error(JSON.parse(JSON.stringify(err, ['stack', 'message', 'inner'], 2)));
+  });
+}
 
