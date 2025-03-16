@@ -1,1 +1,151 @@
 
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: todoapp
+  labels:
+    app: todoapp
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: todoapp
+  template:
+    metadata:
+      labels:
+        app: todoapp
+    spec:
+      containers:
+      - name: todoapp
+        image: image-registry.openshift-image-registry.svc:5000/superlinuxec-dev/todoapp:latest
+        ports:
+        - containerPort: 8080
+        env:
+        - name: NODE_ENV
+          value: "production"
+        - name: DB_NAME
+          value: "todoapp"
+        - name: DB_USER
+          value: "todo"
+        - name: DB_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: todoapp-db-secret
+              key: DB_PASSWORD
+        - name: DB_HOST
+          value: "mysql"
+        - name: DB_PORT
+          value: "3306"
+        resources:
+          limits:
+            memory: "512Mi"
+          requests:
+            memory: "256Mi"
+        livenessProbe:
+          httpGet:
+            path: /
+            port: 8080
+          initialDelaySeconds: 10
+          periodSeconds: 30
+        readinessProbe:
+          httpGet:
+            path: /
+            port: 8080
+          initialDelaySeconds: 5
+          periodSeconds: 10
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: todoapp
+  labels:
+    app: todoapp
+spec:
+  selector:
+    app: todoapp
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 8080
+---
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  name: todoapp
+  labels:
+    app: todoapp
+spec:
+  to:
+    kind: Service
+    name: todoapp
+  port:
+    targetPort: 8080
+  tls:
+    termination: edge
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: todoapp-db-secret
+  labels:
+    app: todoapp
+type: Opaque
+data:
+  DB_PASSWORD: dG9kbzEyMw==  # "todo123" base64 encoded
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mysql
+  labels:
+    app: mysql
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mysql
+  template:
+    metadata:
+      labels:
+        app: mysql
+    spec:
+      containers:
+      - name: mysql
+        image: mysql:5.7
+        env:
+        - name: MYSQL_ROOT_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: todoapp-db-secret
+              key: DB_PASSWORD
+        - name: MYSQL_DATABASE
+          value: "todoapp"
+        - name: MYSQL_USER
+          value: "todo"
+        - name: MYSQL_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: todoapp-db-secret
+              key: DB_PASSWORD
+        ports:
+        - containerPort: 3306
+        volumeMounts:
+        - name: mysql-persistent-storage
+          mountPath: /var/lib/mysql
+      volumes:
+      - name: mysql-persistent-storage
+        emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: mysql
+  labels:
+    app: mysql
+spec:
+  ports:
+  - port: 3306
+    targetPort: 3306
+  selector:
+    app: mysql
+  clusterIP: None  # Para permitir descubrimiento DNS estable entre pods
