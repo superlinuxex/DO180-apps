@@ -1,33 +1,17 @@
-const os = require('os');
-const pkg = require('../package.json');
+exports.context = function(server, path) {
+    if (!server) throw new Error('A restify server object must be provided');
 
-exports.context = function (server, path) {
-    if (!server) {
-        throw new Error('You must provide a restify server instance');
-    }
+    const context = path ? `${path}/serverinfo` : '/serverinfo';
 
-    let context = "/serverinfo";
-    if (path) {
-        context = path + context;
-    }
-
-    server.get(context, this.info);
+    server.get(context, (req, res, next) => {
+        const serverInfo = {
+            name: 'Todo API Server',
+            version: '1.0.0',
+            nodeVersion: process.version,
+            platform: process.platform,
+            uptime: process.uptime().toFixed(2) + ' seconds'
+        };
+        res.json(serverInfo);
+        next();
+    });
 };
-
-exports.info = function (req, res, next) {
-    const info = {
-        appName: pkg.name,
-        version: pkg.version,
-        description: pkg.description || 'ToDo API service',
-        hostname: os.hostname(),
-        platform: os.platform(),
-        uptime: `${os.uptime()} seconds`,
-        memory: {
-            total: `${(os.totalmem() / (1024 ** 2)).toFixed(2)} MB`,
-            free: `${(os.freemem() / (1024 ** 2)).toFixed(2)} MB`
-        }
-    };
-    res.json(info);
-    return next();
-};
-
