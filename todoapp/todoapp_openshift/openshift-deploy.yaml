@@ -1,102 +1,16 @@
-
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: todoapp
-  labels:
-    app: todoapp
-spec:
-  replicas: 1
-  selector:
-    matchLabels:
-      app: todoapp
-  template:
-    metadata:
-      labels:
-        app: todoapp
-    spec:
-      containers:
-      - name: todoapp
-        image: image-registry.openshift-image-registry.svc:5000/superlinuxec-dev/todoapp:latest
-        ports:
-        - containerPort: 8080
-        env:
-        - name: NODE_ENV
-          value: "production"
-        - name: DB_NAME
-          value: "todoapp"
-        - name: DB_USER
-          value: "todo"
-        - name: DB_PASSWORD
-          valueFrom:
-            secretKeyRef:
-              name: todoapp-db-secret
-              key: DB_PASSWORD
-        - name: DB_HOST
-          value: "mysql"
-        - name: DB_PORT
-          value: "3306"
-        resources:
-          limits:
-            memory: "512Mi"
-          requests:
-            memory: "256Mi"
-        livenessProbe:
-          httpGet:
-            path: /
-            port: 8080
-          initialDelaySeconds: 10
-          periodSeconds: 30
-        readinessProbe:
-          httpGet:
-            path: /
-            port: 8080
-          initialDelaySeconds: 5
-          periodSeconds: 10
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: todoapp
-  labels:
-    app: todoapp
-spec:
-  selector:
-    app: todoapp
-  ports:
-    - protocol: TCP
-      port: 80
-      targetPort: 8080
----
-apiVersion: route.openshift.io/v1
-kind: Route
-metadata:
-  name: todoapp
-  labels:
-    app: todoapp
-spec:
-  to:
-    kind: Service
-    name: todoapp
-  port:
-    targetPort: 8080
-  tls:
-    termination: edge
----
 apiVersion: v1
 kind: Secret
 metadata:
   name: todoapp-db-secret
-  labels:
-    app: todoapp
-type: Opaque
-data:
-  DB_PASSWORD: dG9kbzEyMw==  # "todo123" base64 encoded
+  namespace: leonardokrk-dev
+stringData:
+  DB_PASSWORD: password123
 ---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: mysql
+  namespace: leonardokrk-dev
   labels:
     app: mysql
 spec:
@@ -112,23 +26,20 @@ spec:
       containers:
       - name: mysql
         image: mysql:5.7
+        ports:
+        - containerPort: 3306
         env:
-        - name: MYSQL_ROOT_PASSWORD
-          valueFrom:
-            secretKeyRef:
-              name: todoapp-db-secret
-              key: DB_PASSWORD
         - name: MYSQL_DATABASE
-          value: "todoapp"
+          value: todoapp
         - name: MYSQL_USER
-          value: "todo"
+          value: todo
         - name: MYSQL_PASSWORD
           valueFrom:
             secretKeyRef:
               name: todoapp-db-secret
               key: DB_PASSWORD
-        ports:
-        - containerPort: 3306
+        - name: MYSQL_ROOT_PASSWORD
+          value: rootpassword
         volumeMounts:
         - name: mysql-persistent-storage
           mountPath: /var/lib/mysql
@@ -140,12 +51,114 @@ apiVersion: v1
 kind: Service
 metadata:
   name: mysql
-  labels:
-    app: mysql
+  namespace: leonardokrk-dev
 spec:
   ports:
   - port: 3306
     targetPort: 3306
   selector:
     app: mysql
-  clusterIP: None  # Para permitir descubrimiento DNS estable entre pods
+---
+apiVersion: build.openshift.io/v1
+kind: BuildConfig
+metadata:
+  name: todoapp
+  namespace: leonardokrk-dev
+spec:
+  source:
+    git:
+      uri: https://github.com/superlinuxex/DO180-apps.git
+    contextDir: todoapp/todoapp_openshift
+  strategy:
+    sourceStrategy:
+      from:
+        kind: ImageStreamTag
+        name: 'nodejs:20'
+        namespace: openshift
+  output:
+    to:
+      kind: ImageStreamTag
+      name: 'todoapp:latest'
+---
+apiVersion: image.openshift.io/v1
+kind: ImageStream
+metadata:
+  name: todoapp
+  namespace: leonardokrk-dev
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: todoapp
+  namespace: leonardokrk-dev
+  labels:
+    app: todoapp
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: todoapp
+  template:
+    metadata:
+      labels:
+        app: todoapp
+    spec:
+      containers:
+      - name: todoapp
+        image: image-registry.openshift-image-registry.svc:5000/leonardokrk-dev/todoapp:latest
+        ports:
+        - containerPort: 8080
+        env:
+        - name: NODE_ENV
+          value: production
+        - name: DB_NAME
+          value: todoapp
+        - name: DB_USER
+          value: todo
+        - name: DB_PASSWORD
+          valueFrom:
+              secretKeyRef:
+                name: todoapp-db-secret
+                key: DB_PASSWORD
+        - name: DB_HOST
+          value: mysql
+        - name: DB_PORT
+          value: '3306'
+        readinessProbe:
+          httpGet:
+            path: /
+            port: 8080
+          initialDelaySeconds: 5
+          periodSeconds: 10
+        livenessProbe:
+          httpGet:
+            path: /
+            port: 8080
+          initialDelaySeconds: 10
+          periodSeconds: 30
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: todoapp
+  namespace: leonardokrk-dev
+spec:
+  ports:
+  - port: 80
+    targetPort: 8080
+  selector:
+    app: todoapp
+---
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  name: todoapp
+  namespace: leonardokrk-dev
+spec:
+  to:
+    kind: Service
+    name: todoapp
+  port:
+    targetPort: 8080
+  tls:
+    termination: edge
