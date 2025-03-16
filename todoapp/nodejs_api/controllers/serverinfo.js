@@ -1,17 +1,14 @@
-exports.context = function(server, path) {
-    if (!server) throw new Error('A restify server object must be provided');
 
-    const context = path ? `${path}/serverinfo` : '/serverinfo';
+const express = require('express');
+const router = express.Router();
+const os = require('os');
 
-    server.get(context, (req, res, next) => {
-        const serverInfo = {
-            name: 'Todo API Server',
-            version: '1.0.0',
-            nodeVersion: process.version,
-            platform: process.platform,
-            uptime: process.uptime().toFixed(2) + ' seconds'
-        };
-        res.json(serverInfo);
-        next();
-    });
-};
+router.get('/', (req, res) => {
+  res.json({
+    hostname: os.hostname(),
+    platform: os.platform(),
+    uptime: os.uptime()
+  });
+});
+
+module.exports = router;
