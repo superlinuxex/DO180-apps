@@ -1,7 +1,6 @@
 const { Item } = require('../models/db');
 
 module.exports = function(app) {
-  // Obtener todas las tareas
   app.get('/api/items', async (req, res) => {
     try {
       const items = await Item.findAll();
@@ -11,7 +10,6 @@ module.exports = function(app) {
     }
   });
 
-  // Crear una nueva tarea
   app.post('/api/items', async (req, res) => {
     try {
       const newItem = await Item.create({
@@ -24,7 +22,6 @@ module.exports = function(app) {
     }
   });
 
-  // Actualizar una tarea por ID
   app.put('/api/items/:id', async (req, res) => {
     try {
       const item = await Item.findByPk(req.params.id);
@@ -40,7 +37,6 @@ module.exports = function(app) {
     }
   });
 
-  // Eliminar una tarea por ID
   app.delete('/api/items/:id', async (req, res) => {
     try {
       const deleted = await Item.destroy({ where: { id: req.params.id } });
