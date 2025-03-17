@@ -50,6 +50,41 @@ Accede vía navegador a la URL de la **route**.
 
 ---
 
+## 📦 Ejemplos de uso con `curl`
+
+### Crear una nueva tarea
+```bash
+curl -X POST http://URL_ROUTE/api/items \
+     -H "Content-Type: application/json" \
+     -d '{"description": "Aprender OpenShift"}'
+```
+
+### Listar tareas
+```bash
+curl http://URL_ROUTE/api/items
+```
+
+### Marcar tarea como realizada
+```bash
+curl -X PUT http://URL_ROUTE/api/items/1 \
+     -H "Content-Type: application/json" \
+     -d '{"done": true}'
+```
+
+### Eliminar tarea
+```bash
+curl -X DELETE http://URL_ROUTE/api/items/1
+```
+
+### Ver info del servidor
+```bash
+curl http://URL_ROUTE/info
+```
+
+> 🔄 Reemplaza `URL_ROUTE` por la URL obtenida con `oc get route`.
+
+---
+
 ## 💪 Requisitos
 - OpenShift 4+
 - Node.js 20 (ya incluido en la imagen base `node:20-alpine`)
