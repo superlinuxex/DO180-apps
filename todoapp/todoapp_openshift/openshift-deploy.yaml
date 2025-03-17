@@ -70,10 +70,7 @@ spec:
       uri: https://github.com/superlinuxex/DO180-apps.git
     contextDir: todoapp/todoapp_openshift
   strategy:
-    sourceStrategy:
-      from:
-        kind: DockerImage
-        name: docker.io/library/node:20
+    dockerStrategy: {}
   output:
     to:
       kind: ImageStreamTag
