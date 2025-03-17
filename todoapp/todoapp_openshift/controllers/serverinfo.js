@@ -1,5 +1,5 @@
 module.exports = function(app) {
-  app.get('/info', (req, res) => {
+  app.get('/api/serverinfo', (req, res) => {
     res.json({
       uptime: process.uptime(),
       message: 'OK',
